@@ -77,7 +77,7 @@ def etymological_sig(document, etymwn):
 
     return word_count
 
-def generate_sig_dataset(corpus, etymwn, filename):
+def generate_sig_dataset(corpus, etymwn):
 
     sig = pd.DataFrame()
     for name, document in corpus.items():
@@ -88,7 +88,7 @@ def generate_sig_dataset(corpus, etymwn, filename):
     # Normalizar por total de palavras
     sig = sig.divide(sig.sum(axis=1),axis=0)
     # Salvar em disco
-    sig.to_csv(filename)
+    return sig
 
 
 def generate_dataset():
@@ -98,6 +98,9 @@ def generate_dataset():
     print("Carregando árvore etimológica")
     etymwn = load_etymology()
     print("Extraíndo assinatura etimológica dos documentos")
-    generate_sig_dataset(brown_tokens, etymwn, 'brown_fingerprints.csv')
+    fingerprints = generate_sig_dataset(brown_tokens, etymwn)
+    # Indexar por nome do documento
+    fingerprints.index = brown.fileids()
+    fingerprints.to_csv('brown_fingerprints.csv')
 
 

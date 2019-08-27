@@ -103,4 +103,7 @@ def generate_dataset():
     fingerprints.index = brown.fileids()
     fingerprints.to_csv('brown_fingerprints.csv')
 
-
+def get_brown_categories():
+    categories = [brown.categories(name)[0] for name in brown.fileids()]
+    y = pd.DataFrame({'category': categories}, index=brown.fileids())
+    return y

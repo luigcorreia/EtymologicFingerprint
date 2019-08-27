@@ -59,7 +59,10 @@ def origin_of(word, etymwn, lang='eng', level=1):
         else:
             return origin_of(word, etymwn, lang=lang, level=level-1)
     except:
-        return None, None
+        if lang == 'eng':
+            return None, None
+        else:
+            return lang, word
 
 def etymological_sig(document, etymwn):
 
@@ -68,7 +71,7 @@ def etymological_sig(document, etymwn):
     word_count = pd.DataFrame()
 
     for word in document:
-        lang, parent_word = origin_of(word, etymwn)
+        lang, parent_word = origin_of(word, etymwn, level=2)
         #print(lang)
         if lang is not None:
             if lang not in word_count:
@@ -101,7 +104,7 @@ def generate_dataset():
     fingerprints = generate_sig_dataset(brown_tokens, etymwn)
     # Indexar por nome do documento
     fingerprints.index = brown.fileids()
-    fingerprints.to_csv('brown_fingerprints.csv')
+    fingerprints.to_csv('brown_fingerprints_2.csv')
 
 def get_brown_categories():
     categories = [brown.categories(name)[0] for name in brown.fileids()]

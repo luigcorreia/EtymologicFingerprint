@@ -4,12 +4,12 @@ from datasets import *
 from math import *
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+#import matplotlib.pyplot as plt
+#import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score, silhouette_score
-import skfuzzy as fuzz
+#import skfuzzy as fuzz
 
 def ComponentsPlot(x,y,categories,df):
     sns.lmplot(x=x, y=y, data=df, hue=categories, fit_reg=False)
@@ -38,10 +38,23 @@ def optimal_number_of_clusters(wcss):
     
     return distances.index(max(distances)) + 2
 
+def distribuition(fingerprints_pca, n_groups):
+    
+    df = pd.DataFrame(index=fingerprints_pca['category'].drop_duplicates())
+
+    for i in range(n_groups):
+        df['Cluster '+str(i)] = fingerprints_pca[fingerprints_pca['cluster']==i].groupby('category').count()['cluster']
+    df = df.fillna(0)
+    for i in range(n_groups):
+        df['Cluster '+str(i)] = df['Cluster '+str(i)].astype(int)
+
+    return df
+
+
 if __name__ == '__main__':
 
     print("Carregando dataset de fingerprints")
-    fingerprints = pd.read_csv("brown_fingerprints.csv",index_col=0)
+    fingerprints = pd.read_csv("brown_fingerprints_2.csv",index_col=0)
     y = get_brown_categories()
 
     print("Extraíndo as duas Componentes Principais")
@@ -51,29 +64,37 @@ if __name__ == '__main__':
 
     print("Obtendo agrupamentes de 2 à 15 clusters para PC")
     wcss_pca = calculate_wcss(pca_df)
-    plt.plot(range(2,15),wcss_pca,label='Fingerprints PCA')
+    #plt.plot(range(2,15),wcss_pca,label='Fingerprints PCA')
     
     print("Calculando o número ótimo de grupos para PC")
-    optimal_n_pca = optimal_number_of_clusters(wcss)
+    optimal_n_pca = optimal_number_of_clusters(wcss_pca)
     print(optimal_n_pca)
 
-    print("Classficando documentos pelo cluster obtido")
-    kmeans = KMeans(n_clusters=3)
-    kmeans.fit(pca_df)
-    y_cluster = kmeans.predict(pca_df)
+    print("Classificando documentos pelo cluster obtido")
+    
+    kmeans_pca = KMeans(n_clusters=2)
+    kmeans_pca.fit(pca_df)
+    y_cluster = kmeans_pca.predict(pca_df)
     y_cluster = pd.DataFrame({'cluster':y_cluster},index=pca_df.index)
 
-    # Reduzir categorias em número ótimo de grupos:
-    y_categories = y.apply(lambda c: 0 if c in ['goverment','learned'] else 1 if c in ['romance','adventure','science_fiction','mystery','fiction'] else 2)
+    print("Índice de Silhueta para 2 grupos:")
+    print(silhouette_score(pca_df, y_cluster['cluster']))
 
-    # Calcular shilluette e Rand Ajusted Index
-    print(ajusted_rand_score(y_categories, y_cluster))
-    print(silhouette_score(pca_df, y_cluster))
+    # Reduzir categorias para 2 grupos:
+    print("Índice de Rand Ajustado para 2 grupos:")
+    y['reduced'] = y['category'].apply(lambda c: 0 if c in ['fiction','mystery','science_fiction','adventure','romance','humor'] else 1)
+    # Calcular Rand Ajusted Index
+    print(adjusted_rand_score(y['reduced'], y_cluster['cluster']))
+    # Para 3 grupos
+    print("Índice de Rand Ajustado para 3 grupos:")
+    y['reduced'] = y['category'].apply(lambda c: 2 if c in ['goverment','learned'] else 1 if c in ['humor', 'romance','adventure','science_fiction','mystery','fiction'] else 0)
+    print(adjusted_rand_score(y['reduced'], y_cluster['cluster']))
 
     # Agruppar com cfuzzy
     # Calcular fuzzy shilluete 
 
     #print("Plotando resultados")
     #fingerprints_pca = pd.concat([pca_df,y,y_cluster], axis=1)
+    #distribuition(fingerprints_pca, 2).to_csv('category_distribution_2.csv')
     #ComponentsPlot('PC 1','PC 2', 'category', fingerprints_pca)
     #ComponentsPlot('PC 1','PC 2', 'cluster', fingerprints_pca)
